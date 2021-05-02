@@ -37,7 +37,6 @@ let generate = document.querySelector("#generate-meme button[type='submit']");
 generate.onclick = function(e) {
   e.preventDefault();
   let inputs = document.getElementById("generate-meme").elements,
-      img_dim = getDimmensions(canvas.width, canvas.height, img.width, img.height),
       text_top = inputs["text-top"].value,
       text_bot = inputs["text-bottom"].value;
     
@@ -47,7 +46,6 @@ generate.onclick = function(e) {
       ctx.fillStyle = 'rgb(0,0,0)';
       ctx.fillRect(0,0, canvas.width, canvas.height);
     }
-    console.log("Here I am!")
     drawText(text_top, text_bot, ctx, "36px serif");
   }
   else {
@@ -75,6 +73,7 @@ if (window.speechSynthesis.getVoices) {
   // https://stackoverflow.com/questions/49506716/speechsynthesis-getvoices-returns-empty-array-on-windows
   setTimeout(() => {
     let voices = window.speechSynthesis.getVoices();
+    voice_list = voices;
     if (voices.length > 0) {
       let voice_list = document.getElementById('voice-selection');
       voice_list.removeAttribute("disabled");
@@ -109,12 +108,14 @@ document.getElementById("text-bottom").addEventListener('change', () => {
 
 document.querySelector("#button-group button[type='button']").addEventListener('click', (e) => {
   let utterance = new SpeechSynthesisUtterance(document.getElementById("text-top").value + "," + document.getElementById("text-bottom").value);
-  let voice = document.getElementById('voice-selection').value;
+  let voice = document.getElementById('voice-selection').options[document.getElementById('voice-selection').selectedIndex].getAttribute("data-name");
   for(var i = 0; i < voice_list.length ; i++) {
+
     if(voice_list[i].name === voice) {
       utterance.voice = voice_list[i];
     }
   }
+  utterance.volume = document.querySelector("#volume-group input").value / 100;
   window.speechSynthesis.cancel();
   window.speechSynthesis.speak(utterance);
 })
