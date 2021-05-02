@@ -7,23 +7,12 @@ var voice_list = [];
 var canvas = document.getElementById('user-image');
 
 // Fires whenever the img object loads a new image (such as with img.src =)
-img.addEventListener('load', () => {
+img.addEventListener('load', loadImg
   // Some helpful tips:
   // - Fill the whole Canvas with black first to add borders on non-square images, then draw on top
   // - Clear the form when a new image is selected
   // - If you draw the image to canvas here, it will update as soon as a new image is selected
-  if (canvas.getContext) {
-    let ctx = canvas.getContext('2d');
-    ctx.fillStyle = 'rgb(0,0,0)';
-    ctx.fillRect(0,0, canvas.width, canvas.height);
-
-    let img_dim = getDimmensions(canvas.width, canvas.height, img.width, img.height);
-    ctx.drawImage(img, img_dim.startX, img_dim.startY, img_dim.width, img_dim.height);
-  }
-  else {
-    console.log("Canvas unsupported!");
-  }
-});
+);
 
 // Handle image input
 let image_input = document.getElementById('image-input');
@@ -42,7 +31,10 @@ generate.onclick = function(e) {
     
   if (canvas.getContext) {
     let ctx = canvas.getContext('2d');
-    if (!img.src) {
+    if (img.src) {
+      loadImg();
+    }
+    else {
       ctx.fillStyle = 'rgb(0,0,0)';
       ctx.fillRect(0,0, canvas.width, canvas.height);
     }
@@ -172,4 +164,18 @@ function drawText(top, bottom, ctx, font) {
   ctx.fillText(top, (canvas.width - text_dim.width) / 2, (text_dim.actualBoundingBoxAscent + text_dim.actualBoundingBoxDescent)*1.5, canvas.width);
   text_dim = ctx.measureText(bottom);
   ctx.fillText(bottom, (canvas.width - text_dim.width) / 2, canvas.height - ((text_dim.actualBoundingBoxAscent + text_dim.actualBoundingBoxDescent)*0.5), canvas.width);
+}
+
+function loadImg() {
+  if (canvas.getContext) {
+    let ctx = canvas.getContext('2d');
+    ctx.fillStyle = 'rgb(0,0,0)';
+    ctx.fillRect(0,0, canvas.width, canvas.height);
+
+    let img_dim = getDimmensions(canvas.width, canvas.height, img.width, img.height);
+    ctx.drawImage(img, img_dim.startX, img_dim.startY, img_dim.width, img_dim.height);
+  }
+  else {
+    console.log("Canvas unsupported!");
+  }
 }
