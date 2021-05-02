@@ -2,13 +2,16 @@
 
 const img = new Image(); // used to load image from <input> and draw to canvas
 
+var voice_avail = false;
+var voice_list = [];
+var canvas = document.getElementById('user-image');
+
 // Fires whenever the img object loads a new image (such as with img.src =)
 img.addEventListener('load', () => {
   // Some helpful tips:
   // - Fill the whole Canvas with black first to add borders on non-square images, then draw on top
   // - Clear the form when a new image is selected
   // - If you draw the image to canvas here, it will update as soon as a new image is selected
-  let canvas = document.getElementById('user-image');
   if (canvas.getContext) {
     let ctx = canvas.getContext('2d');
     ctx.fillStyle = 'rgb(0,0,0)';
@@ -33,8 +36,93 @@ image_input.addEventListener('change', (event) => {
 let generate = document.querySelector("#generate-meme button[type='submit']");
 generate.onclick = function(e) {
   e.preventDefault();
-  let inputs = document.getElementById("")
+  let inputs = document.getElementById("generate-meme").elements,
+      img_dim = getDimmensions(canvas.width, canvas.height, img.width, img.height),
+      text_top = inputs["text-top"].value,
+      text_bot = inputs["text-bottom"].value;
+    
+  if (canvas.getContext) {
+    let ctx = canvas.getContext('2d');
+    if (!img.src) {
+      ctx.fillStyle = 'rgb(0,0,0)';
+      ctx.fillRect(0,0, canvas.width, canvas.height);
+    }
+    console.log("Here I am!")
+    drawText(text_top, text_bot, ctx, "36px serif");
+  }
+  else {
+    console.log("Canvas unsupported");
+  }
 }
+
+// Handle Clear button
+document.querySelector("#button-group button[type='reset']").addEventListener('click', () => {
+  if (canvas.getContext) {
+    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+  }
+  document.querySelector("#button-group button[type='reset']").setAttribute('disabled', true);
+  document.querySelector("#button-group button[type='button']").setAttribute('disabled', true);
+  document.getElementById("generate-meme").reset();
+  window.speechSynthesis.cancel();
+})
+
+document.getElementById("generate-meme").addEventListener('change', () => {
+  document.querySelector("#button-group button[type='reset']").removeAttribute("disabled");
+})
+
+// Voice options
+if (window.speechSynthesis.getVoices) {
+  // https://stackoverflow.com/questions/49506716/speechsynthesis-getvoices-returns-empty-array-on-windows
+  setTimeout(() => {
+    let voices = window.speechSynthesis.getVoices();
+    if (voices.length > 0) {
+      let voice_list = document.getElementById('voice-selection');
+      voice_list.removeAttribute("disabled");
+      voice_list.removeChild(document.querySelector("#voice-selection option"));
+      for (let i = 0; i < voices.length; i++) {
+        let option = document.createElement('option');
+        option.textContent = voices[i].name + ' (' + voices[i].lang + ')';
+
+        if(voices[i].default) {
+          option.textContent += ' -- DEFAULT';
+        }
+
+        option.setAttribute('data-lang', voices[i].lang);
+        option.setAttribute('data-name', voices[i].name);
+        voice_list.appendChild(option);
+      }
+      voice_avail = true;
+    }
+  }, 1000);
+}
+
+// Handle Read Text button
+document.getElementById("text-top").addEventListener('change', () => {
+  if (voice_avail)
+    document.querySelector("#button-group button[type='button']").removeAttribute("disabled");
+})
+
+document.getElementById("text-bottom").addEventListener('change', () => {
+  if (voice_avail)
+    document.querySelector("#button-group button[type='button']").removeAttribute("disabled");
+})
+
+document.querySelector("#button-group button[type='button']").addEventListener('click', (e) => {
+  let utterance = new SpeechSynthesisUtterance(document.getElementById("text-top").value + "," + document.getElementById("text-bottom").value);
+  let voice = document.getElementById('voice-selection').value;
+  for(var i = 0; i < voice_list.length ; i++) {
+    if(voice_list[i].name === voice) {
+      utterance.voice = voice_list[i];
+    }
+  }
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(utterance);
+})
+
+// Handle Speaker icon
+document.querySelector("#volume-group input").addEventListener('change', (e) => {
+  document.querySelector("#volume-group img").setAttribute("src", "/icons/volume-level-" + Math.ceil(e.target.value / 34) + ".svg");
+})
 
 /**
  * Takes in the dimensions of the canvas and the new image, then calculates the new
@@ -74,4 +162,13 @@ function getDimmensions(canvasWidth, canvasHeight, imageWidth, imageHeight) {
   }
 
   return { 'width': width, 'height': height, 'startX': startX, 'startY': startY }
+}
+
+function drawText(top, bottom, ctx, font) {
+  ctx.fillStyle = "white";
+  ctx.font = font;
+  let text_dim = ctx.measureText(top);
+  ctx.fillText(top, (canvas.width - text_dim.width) / 2, (text_dim.actualBoundingBoxAscent + text_dim.actualBoundingBoxDescent)*1.5, canvas.width);
+  text_dim = ctx.measureText(bottom);
+  ctx.fillText(bottom, (canvas.width - text_dim.width) / 2, canvas.height - ((text_dim.actualBoundingBoxAscent + text_dim.actualBoundingBoxDescent)*0.5), canvas.width);
 }
