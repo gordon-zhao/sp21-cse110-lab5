@@ -38,7 +38,7 @@ generate.onclick = function(e) {
       ctx.fillStyle = 'rgb(0,0,0)';
       ctx.fillRect(0,0, canvas.width, canvas.height);
     }
-    drawText(text_top, text_bot, ctx, "36px serif");
+    drawText(text_top, text_bot, ctx, 36, "serif");
   }
   else {
     console.log("Canvas unsupported");
@@ -114,7 +114,7 @@ document.querySelector("#button-group button[type='button']").addEventListener('
 
 // Handle Speaker icon
 document.querySelector("#volume-group input").addEventListener('change', (e) => {
-  document.querySelector("#volume-group img").setAttribute("src", "/icons/volume-level-" + Math.ceil(e.target.value / 34) + ".svg");
+  document.querySelector("#volume-group img").setAttribute("src", "icons/volume-level-" + Math.ceil(e.target.value / 34) + ".svg");
 })
 
 /**
@@ -157,13 +157,109 @@ function getDimmensions(canvasWidth, canvasHeight, imageWidth, imageHeight) {
   return { 'width': width, 'height': height, 'startX': startX, 'startY': startY }
 }
 
-function drawText(top, bottom, ctx, font) {
+function drawText(top, bottom, ctx, size, font) {
+  ctx.font = size + "px " + font;
+  ctx.lineWidth = 6;
+  ctx.strokeStype = "black";
   ctx.fillStyle = "white";
-  ctx.font = font;
-  let text_dim = ctx.measureText(top);
-  ctx.fillText(top, (canvas.width - text_dim.width) / 2, (text_dim.actualBoundingBoxAscent + text_dim.actualBoundingBoxDescent)*1.5, canvas.width);
-  text_dim = ctx.measureText(bottom);
-  ctx.fillText(bottom, (canvas.width - text_dim.width) / 2, canvas.height - ((text_dim.actualBoundingBoxAscent + text_dim.actualBoundingBoxDescent)*0.5), canvas.width);
+
+  if (top) {
+    top = top.split(" ");
+    let buffer = top[0];
+    let global_y_offset = 0;
+
+    function flush() {
+      let text_dim = ctx.measureText(buffer);
+      let text_height = text_dim.actualBoundingBoxAscent + text_dim.actualBoundingBoxDescent;
+      let y_offset = text_height;
+      if (global_y_offset == 0) {
+        y_offset = text_height*1.5;
+      }
+      else {
+        y_offset = text_height*1.5 + global_y_offset;
+      }
+      ctx.strokeText(buffer, (canvas.width - text_dim.width) / 2, y_offset);
+      ctx.fillText(buffer, (canvas.width - text_dim.width) / 2, y_offset);
+      buffer = "";
+      global_y_offset = y_offset;
+    }
+
+    if (top.length == 1) {
+      flush();
+    }
+
+    for (let i = 1; i < top.length; i++) {
+      if (ctx.measureText(buffer + top[i]).width < canvas.width * 0.95) {
+        buffer += " " + top[i];
+        if (i == top.length - 1) {
+          // The last word reached and buffer not overflowed
+          flush();
+        }
+      }
+      else {
+          if (i == top.length - 1) {
+            // The last word reached and buffer not overflowed
+            // Flush twice
+            flush();
+            buffer = top[top.length - 1];
+            flush();
+          }
+          else {
+            flush();
+            buffer = top[i];
+          }
+      }
+    }
+  }
+  
+  if (bottom) {
+    bottom = bottom.split(" ");
+    let buffer = bottom[bottom.length - 1];
+    let global_y_offset = 0;
+    
+    function flush() {
+      let text_dim = ctx.measureText(buffer);
+      let text_height = text_dim.actualBoundingBoxAscent + text_dim.actualBoundingBoxDescent;
+      let y_offset = text_height;
+      if (global_y_offset == 0) {
+        y_offset = canvas.height - (text_height*0.5);
+      }
+      else {
+        y_offset = global_y_offset - (text_height*1.5);
+      }
+      ctx.strokeText(buffer, (canvas.width - text_dim.width) / 2, y_offset);
+      ctx.fillText(buffer, (canvas.width - text_dim.width) / 2, y_offset);
+      buffer = "";
+      global_y_offset = y_offset;
+    }
+
+    if (bottom.length == 1) {
+      flush();
+    }
+
+    for (let i = bottom.length - 2; i > -1; i--) {
+      if (ctx.measureText(buffer + bottom[i]).width < canvas.width * 0.95) {
+        buffer = bottom[i] + " " + buffer;
+        if (i == 0) {
+          // The last word reached and buffer not overflowed
+          flush();
+        }
+      }
+      else {
+        if (i == 0) {
+          // The last word reached and buffer overflowed
+          // Need to flush twice
+          flush();
+          buffer = bottom[0];
+          flush();
+        }
+        else {
+          flush();
+          buffer = bottom[i];
+        }
+      }
+    }
+  }
 }
 
 function loadImg() {
